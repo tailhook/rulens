@@ -1,0 +1,73 @@
+
+layouts:
+  cluster:
+    balancer <- frontend:
+    gateway_input -> balancer:
+    balancer -> gateway_output:
+      priority: 2
+    balancer -> worker:
+      port: 10001
+    gateway_input <- _gateway_input:
+      port: 10002
+    gateway_output <- _gateway_output:
+      port: 10003
+    frontend <- _api:
+      port: 10004
+  subcluser:
+    _worker -> device:
+    device -> worker:
+      addr: ipc:///tmp/device
+  world:
+    _api -> api:
+      port: 2222
+    gateway_input <- gateway_output:
+      skip_ourself: yes
+
+
+groups:
+  cluster1:
+    layout: cluster
+    rule:
+      ip: 127.1.0.0\16
+    children:
+      frontend:
+      - ip: 127.1.5.1
+      - ip: 127.1.5.2
+      balancer:
+      - ip: 127.1.11.1
+      - ip: 127.1.11.2
+      gateway_input:
+      - ip: 127.1.6.1
+      gateway_output:
+      - ip: 127.1.6.1
+
+  cluster2:
+    layout: cluster
+    rule:
+      ip: 127.2.0.0\16
+    children:
+      frontend:
+      - ip: 127.2.5.1
+      balancer:
+      - ip: 127.2.11.1
+      gateway_input:
+      - ip: 127.2.6.1
+      gateway_output:
+      - ip: 127.2.6.1
+
+  subcluster1:
+    layout: subcluster
+    rule:
+      ip: 127.1.22.1
+    # all roles are implicit
+
+topologies:
+  internal:
+    layout: world
+    children:
+    - cluster1
+    - cluster2
+  public:
+    topology: internal
+    slot: _api
+
