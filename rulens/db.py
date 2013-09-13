@@ -1,6 +1,7 @@
-import sys
 import yaml
 import pprint
+import argparse
+from urllib.parse import urlparse, parse_qsl
 
 from .builder import TopologyBuilder
 
@@ -10,8 +11,13 @@ class Database(object):
     def __init__(self):
         self.topologies = {}
 
-    def resolve(self, topology_uri, socket_type):
-        raise NotImplementedError()
+    def resolve(self, host, appname, topology_url, socktype):
+        url = urlparse(topology_url)
+        topology = self.topologies[url.netloc]
+        params = dict(parse_qsl(url.query))
+        params.update(dict(host=host, appname=appname))
+        print(topology.resolve(params))
+        print(topology, url, params)
 
     def pretty_print(self):
         for top in self.topologies.values():
@@ -25,8 +31,27 @@ class Database(object):
         self.topologies.update(bld.topologies())
 
 
-if __name__ == '__main__':
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('files', nargs='+',
+        help="Files to read topology from")
+    ap.add_argument('--print-db', action='store_true', default=False,
+        help="Print whole database and exit")
+    ap.add_argument('--query', nargs=4,
+        metavar=('HOST', 'APPNAME',  'TOPOLOGY', 'SOCKTYPE'),
+        help="Query database and exit")
+    options = ap.parse_args()
+
     db = Database()
-    for i in sys.argv[1:]:
+    for i in options.files:
         db.add_from_file(i)
-    db.pretty_print()
+
+    if options.print_db:
+        db.pretty_print()
+    elif options.query:
+        db.resolve(*options.query)
+
+
+
+if __name__ == '__main__':
+    main()
