@@ -46,7 +46,9 @@ class LayoutInstance(object):
         self._populate(bld, layout, group)
 
     def _populate(self, builder, layout, group):
-        pass
+        rule = group['rule']
+        for i in children:
+
 
 
 class TopologyBuilder(object):

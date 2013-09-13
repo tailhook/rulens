@@ -14,7 +14,9 @@ class Database(object):
         raise NotImplementedError()
 
     def pretty_print(self):
-        pprint.pprint(self.topologies)
+        for top in self.topologies.values():
+            print('--', top.name, '--')
+            pprint.pprint(top.__dict__)
 
     def add_from_file(self, filename):
         with open(filename, 'rt') as f:
