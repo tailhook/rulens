@@ -16,8 +16,9 @@ class Database(object):
         topology = self.topologies[url.netloc]
         params = dict(parse_qsl(url.query))
         params.update(dict(host=host, appname=appname))
-        print(topology.resolve(params))
-        print(topology, url, params)
+        result = list(topology.resolve(params['role'], socktype, params))
+        print('RESULT', result)
+        return result
 
     def pretty_print(self):
         for top in self.topologies.values():

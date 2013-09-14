@@ -51,7 +51,7 @@ groups:
   cluster1:
     layout: cluster
     rule:
-      ip: 127.1.0.0\16
+      dc: first
     children:
       frontend:
       - ip: 127.1.5.1
@@ -79,7 +79,7 @@ groups:
   cluster2:
     layout: cluster
     rule:
-      ip: 127.2.0.0\16
+      dc: second
     children:
       frontend:
       - ip: 127.2.5.1
@@ -104,6 +104,7 @@ topologies:
   #  Multiple "clusters" are connected using the "world" layout
   #  Note: there are implicit "subcluster" layouts that are matched by rules
   internal:
+    type: reqrep
     layout: world
     children:
     - cluster1
@@ -114,6 +115,7 @@ topologies:
   #  public ports, no matter what the internal structure is, and what other
   #  properties supplied in the name service are
   public:
+    type: reqrep
     topology: internal
     slot: _api
 
