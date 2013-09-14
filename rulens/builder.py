@@ -51,6 +51,7 @@ class ConnectionInstance(object):
             if 'ip' in r:
                 ip = r['ip']
         port = info.port
+        assert port, port
         return 'tcp://{}:{}'.format(ip, port)
 
     def address_for(self, node):

@@ -49,7 +49,6 @@ class Topology(object):
         if len(rules) != 1:
             raise AssertionError("Ambiguous node")
         node = rules[0]
-        print("CONN", node.connections)
         for conn in node.connections[party]:
             yield conn.address_for(node)
 

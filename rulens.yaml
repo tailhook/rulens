@@ -11,18 +11,21 @@ layouts:
     balancer -> worker:
       port: 10001
     balancer <- frontend:
+      port: 10006
 
     # The _underscored names denote "port" a place where external entity
     # may connect
     gateway_input <- _gateway_in:
       port: 10002
-    gateway_output <- _gateway_out:
+    gateway_output -> _gateway_out:
       port: 10003
     frontend <- _api:
       port: 10004
     gateway_input -> balancer:
+      port: 10007
     balancer -> gateway_output:
       # Failover route, note default priority is 8
+      port: 10005
       priority: 10
 
   # The intra-node layout, may be needed on nodes having many workers, or
