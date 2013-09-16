@@ -18,7 +18,7 @@ layouts:
     gateway_input <- _gateway_in:
       port: 10002
     gateway_output -> _gateway_out:
-      port: 10003
+      port: 10002
     frontend <- _api:
       port: 10004
     gateway_input -> balancer:
