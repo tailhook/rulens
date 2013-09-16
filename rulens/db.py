@@ -17,7 +17,6 @@ class Database(object):
         params = dict(parse_qsl(url.query))
         params.update(dict(host=host, appname=appname))
         result = list(topology.resolve(params['role'], socktype, params))
-        print('RESULT', result)
         return result
 
     def pretty_print(self):

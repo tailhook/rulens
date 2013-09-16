@@ -38,19 +38,24 @@ class ConnectionInstance(object):
     def _addr(self, node=None):
         info = self.info
         if info.addr:
-            return info.addr
+            yield info.addr
+            return
         if node is None:
             if info.bound == info.source:
                 nn = self.sources
             else:
                 nn = self.sinks
-            assert len(nn) == 1, nn
-            node = nn[0]
+            for n in nn:
+                yield self._single_addr(n)
+        else:
+            yield self._single_addr(node)
+
+    def _single_addr(self, node):
         ip = None
         for r in node.rules:
             if 'ip' in r:
                 ip = r['ip']
-        port = info.port
+        port = self.info.port
         assert port, port
         return 'tcp://{}:{}'.format(ip, port)
 
@@ -58,14 +63,18 @@ class ConnectionInstance(object):
         info = self.info
         if node in self.sources:
             if info.bound == info.source:
-                return 'bind:{}:{}'.format(info.priority, self._addr(node))
+                for a in self._addr(node):
+                    yield 'bind:{}:{}'.format(info.priority, a)
             else:
-                return 'connect:{}:{}'.format(info.priority, self._addr())
+                for a in self._addr():
+                    yield 'connect:{}:{}'.format(info.priority, a)
         elif node in self.sinks:
             if info.bound == info.sink:
-                return 'bind:8:{}'.format(self._addr(node))
+                for a in self._addr(node):
+                    yield 'bind:8:{}'.format(a)
             else:
-                return 'connect:8:{}'.format(self._addr())
+                for a in self._addr():
+                    yield 'connect:8:{}'.format(a)
         else:
             raise RuntimeError("Wrong node")
 

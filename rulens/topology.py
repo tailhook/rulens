@@ -46,11 +46,13 @@ class Topology(object):
         party = self.party_mapping[sock_type]
         rules = list(filter(partial(match_rule, props),
             self.rules[role]))
-        if len(rules) != 1:
+        if len(rules) > 1:
             raise AssertionError("Ambiguous node")
+        if len(rules) < 1:
+            raise AssertionError("No rule for node")
         node = rules[0]
         for conn in node.connections[party]:
-            yield conn.address_for(node)
+            yield from conn.address_for(node)
 
     def add_rule(self, role, rule):
         self.rules[role].append(rule)
