@@ -9,6 +9,7 @@ from urllib.parse import urlparse, parse_qsl
 from contextlib import contextmanager
 from collections import defaultdict
 from itertools import product
+from functools import partial
 
 from .db import Database
 
@@ -27,7 +28,7 @@ def draw_instance_graph(options, db):
     print("Writing", fn)
     proc = subprocess.Popen(['dot', '-Tpng', '-o', fn],
         stdin=subprocess.PIPE)
-    hosts = defaultdict(dict)
+    hosts = defaultdict(partial(defaultdict, dict))
     devices = set()
     conn = defaultdict(list)
     bind = defaultdict(list)
@@ -42,13 +43,14 @@ def draw_instance_graph(options, db):
                 url, nodetype = line.split()
                 if nodetype == 'device':
                     socktypes = ('NN_REQ', 'NN_REP')
+                u = urlparse(url)
+                query = dict(parse_qsl(u.query))
+                nname = '{0[hostname]}_{0[role]}_{0[pid]}'.format(query)
+                if nodetype == 'device':
+                    devices.add(nname)
+                group = db.get_group(None, None, url, socktypes[0])
+                hosts[group][query['hostname']][nname] = query
                 for socktype in socktypes:
-                    u = urlparse(url)
-                    query = dict(parse_qsl(u.query))
-                    nname = '{0[hostname]}_{0[role]}_{0[pid]}'.format(query)
-                    if nodetype == 'device':
-                        devices.add(nname)
-                    hosts[query['hostname']][nname] = query
                     for addr in db.resolve(None, None, url, socktype):
                         kind, priority, raddr = addr.split(':', 2)
                         if socktype == 'NN_REQ':  # TODO(pc) other types!
@@ -74,19 +76,26 @@ def draw_instance_graph(options, db):
     #if True:
     with set_stdout(io.TextIOWrapper(proc.stdin)):
         print("digraph topology {")
-        print("rankdir=TB")
+        print("rankdir=LR")
         print("ranksep=2")
 
-        for host, ndict in hosts.items():
-            print("subgraph cluster_{} {{".format(host))
-            print('label="{}"'.format(host))
-            for name, props in ndict.items():
-                if name in devices:
-                    print('{0} [shape=record style=rounded '
-                          'label="{{<REP>REP | {1[role]} | <REQ>REQ}}"]'
-                        .format(name, props))
-                else:
-                    print('{0} [label={1[role]}]'.format(name, props))
+        for group, ghosts in hosts.items():
+            print("subgraph cluster_{} {{".format(group))
+            print("style=dotted")
+            print('label="{}"'.format(group))
+            for host, ndict in ghosts.items():
+                print("subgraph cluster_{} {{".format(host))
+                print('label="{}"'.format(host))
+                print('style=solid')
+                print('color=gray')
+                for name, props in ndict.items():
+                    if name in devices:
+                        print('{0} [shape=record style=rounded '
+                              'label="{{<REP>REP | {1[role]} | <REQ>REQ}}"]'
+                            .format(name, props))
+                    else:
+                        print('{0} [label={1[role]}]'.format(name, props))
+                print("}")
             print("}")
 
         for addr, nlist in bind.items():
@@ -116,12 +125,12 @@ def draw_instance_graph(options, db):
                     counter += 1
                     if p is None: # priority is in a req socket
                         print('ext_{} [shape=octagon label="{}"]'
-                            .format(counter, addr))
+                            .format(counter, addr[len('tcp://'):]))
                         print('ext_{} -> {} [style="{}"]'
                             .format(counter, n, priostyles[p]))
                     else:
                         print('ext_{} [shape=octagon label="{}"]'
-                            .format(counter, addr))
+                            .format(counter, addr[len('tcp://'):]))
                         print('{} -> ext_{} [style="{}" dir=back arrowhead=inv]'
                             .format(n, counter, priostyles[p]))
         print('{rank=same;',

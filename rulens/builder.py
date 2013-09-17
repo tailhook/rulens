@@ -243,7 +243,8 @@ class ConnectAddress(object):
 
 class Node(object):
 
-    def __init__(self, name, matched_by_rules=()):
+    def __init__(self, name, matched_by_rules=(), group=None):
+        self.group = group
         self.name = name
         self.rules = tuple(matched_by_rules)
         self.connections = {
@@ -299,7 +300,7 @@ class TopologyBuilder(object):
             for i in children:
                 g = self._groups[i]
                 l = self._layouts[g['layout']]
-                groupnodes = self._process_group(g, l)
+                groupnodes = self._process_group(i, g, l)
                 cinfo = {Connection.canonical_key(k): v
                     for k, v in g.get('connections', {}).items()}
                 for conn in l._connections:
@@ -322,17 +323,17 @@ class TopologyBuilder(object):
 
 
 
-    def _process_group(self, group, layout):
+    def _process_group(self, groupname, group, layout):
         global_rule = group['rule']
         by_role = defaultdict(list)
         for role, rules in group['children'].items():
             for rule in rules:
-                node = Node(role, [global_rule, rule])
+                node = Node(role, [global_rule, rule], group=groupname)
                 by_role[node.name].append(node)
 
         for ep in layout._roles:
             if not ep in by_role:
-                node = Node(ep, [global_rule])
+                node = Node(ep, [global_rule], group=groupname)
                 by_role[node.name].append(node)
         return by_role
 
