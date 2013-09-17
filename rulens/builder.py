@@ -1,5 +1,6 @@
 import random
 from collections import defaultdict
+from itertools import groupby
 
 from .topology import Topology
 
@@ -7,25 +8,75 @@ from .topology import Topology
 class Connection(object):
 
     def __init__(self, source, sink, bound, *,
-        port=None, priority=8, addr=None, skip_ourself=None):
+        port=None, priority=8, addr=None, skip_same=None):
         self.source = source
         self.sink = sink
         self.bound = bound
         self.port = port
         self.addr = addr
         self.priority = priority
-        self.skip_ourself = skip_ourself
+        self.skip_same = skip_same
         self.addresses = []
         assert not (port and addr), "Either port or addr may only be specified"
 
+    @property
+    def abstract(self):
+        return self.source.startswith('_') or self.sink.startswith('_')
+
     def instantiate(self, nodes, info=None):
-        src = nodes[self.source]
-        tgt = nodes[self.sink]
-        ci = ConnectionInstance(self, src, tgt, **(info or {}))
-        for n in src:
-            n.add_source_connection(ci)
-        for n in tgt:
-            n.add_sink_connection(ci)
+        rawsrc = nodes[self.source]
+        rawtgt = nodes[self.sink]
+
+        src = set()
+        for n in rawsrc:
+            if hasattr(n, 'children'):
+                for ch in n.children:
+                    for conn in ch.connections['sink']:
+                        rawsrc.extend(conn.sources)
+                        if conn.info.port is not None:
+                            if self.port is not None:
+                                assert self.port == conn.info.port, \
+                                    (self.port, conn.info.port)
+                            else:
+                                self.port = conn.info.port
+
+            else:
+                src.add(n)
+
+        tgt = set()
+        for n in rawtgt:
+            if hasattr(n, 'children'):
+                for ch in n.children:
+                    for conn in ch.connections['source']:
+                        rawtgt.extend(conn.sinks)
+                        if conn.info.port is not None:
+                            if self.port is not None:
+                                assert self.port == conn.info.port, \
+                                    (self.port, conn.info.port)
+                            else:
+                                self.port = conn.info.port
+            else:
+                tgt.add(n)
+
+        skip = self.skip_same
+        if skip:
+            skip_key = lambda n: n.get_property(skip)
+            for sprop, snodes in groupby(sorted(src, key=skip_key), key=skip_key):
+                snodes = list(snodes)
+                tnodes = [n for n in tgt if n.get_property(skip) != sprop]
+                ci = ConnectionInstance(self, snodes, tnodes, **(info or {}))
+                for n in snodes:
+                    n.add_source_connection(ci)
+                for n in tnodes:
+                    n.add_sink_connection(ci)
+        else:
+            src = list(src)
+            tgt = list(tgt)
+            ci = ConnectionInstance(self, src, tgt, **(info or {}))
+            for n in src:
+                n.add_source_connection(ci)
+            for n in tgt:
+                n.add_sink_connection(ci)
 
     def key(self):
         if self.bound == self.source:
@@ -45,12 +96,17 @@ class ConnectionInstance(object):
 
     def __init__(self, info, sources, sinks, *,
         match_by=None, rules=(), default='all'):
+        assert info.abstract or sources and sinks, info
         self.sources = sources
         self.sinks = sinks
         self.info = info
         self.match_by = match_by
         self.rules = rules
         self.default = default
+
+    def __repr__(self):
+        return ("<{0.__class__.__name__} {0.info.source}->{0.info.sink}>"
+            .format(self))
 
     def _addr(self, nodes=None):
         info = self.info
@@ -71,7 +127,8 @@ class ConnectionInstance(object):
             if 'ip' in r:
                 ip = r['ip']
         port = self.info.port
-        assert port, port
+        assert ip, node
+        assert port, node
         return 'tcp://{}:{}'.format(ip, port)
 
     def address_for(self, node, props):
@@ -81,17 +138,18 @@ class ConnectionInstance(object):
                 for a in self._addr([node]):
                     yield 'bind:{}:{}'.format(info.priority, a)
             else:
+                if info.abstract:  # can't connect to abstract connection
+                    return
                 if self.match_by:
                     sinks = []
                     myval = props[self.match_by]
                     for t in self.sinks:
-                        for r in reversed(t.rules):
-                            val = r.get(self.match_by)
-                            if val is not None:
-                                conn = '{} -> {}'.format(val, myval)
-                                if conn in self.rules:
-                                    sinks.append(t)
-                                break
+                        val = t.get_property(self.match_by)
+                        if val is not None:
+                            conn = '{} -> {}'.format(val, myval)
+                            if conn in self.rules:
+                                sinks.append(t)
+                            break
                     if not sinks:
                         if self.default == 'all':
                             sinks = self.sinks
@@ -106,17 +164,18 @@ class ConnectionInstance(object):
                 for a in self._addr([node]):
                     yield 'bind:8:{}'.format(a)
             else:
+                if info.abstract:  # can't connect to abstract connection
+                    return
                 if self.match_by:
                     sources = []
                     myval = props[self.match_by]
                     for t in self.sources:
-                        for r in reversed(t.rules):
-                            val = r.get(self.match_by)
-                            if val is not None:
-                                conn = '{} -> {}'.format(val, myval)
-                                if conn in self.rules:
-                                    sources.append(t)
-                                break
+                        val = t.get_property(self.match_by)
+                        if val is not None:
+                            conn = '{} -> {}'.format(val, myval)
+                            if conn in self.rules:
+                                sources.append(t)
+                            break
                     if not sources:
                         if self.default == 'all':
                             sources = self.sources
@@ -127,7 +186,7 @@ class ConnectionInstance(object):
                 for a in self._addr(sources):
                     yield 'connect:8:{}'.format(a)
         else:
-            raise RuntimeError("Wrong node")
+            raise AssertionError("Wrong node {!r}".format(node))
 
 
 class Layout(object):
@@ -195,7 +254,18 @@ class Node(object):
     @classmethod
     def supernode(Node, name, nodes):
         self = Node(name, [])
+        self.children = nodes
         return self
+
+    @property
+    def abstract(self):
+        return self.name.startswith('_')
+
+    def get_property(self, name, default=None):
+        for r in reversed(self.rules):
+            if name in r:
+                return r[name]
+        return default
 
     def add_source_connection(self, conn):
         self.connections['source'].append(conn)
@@ -204,7 +274,10 @@ class Node(object):
         self.connections['sink'].append(conn)
 
     def __repr__(self):
-        return '<Node {!r} {!r}>'.format(self.name, self.rules)
+        if hasattr(self, 'children'):
+            return '<SuperNode {!r} {!r}>'.format(self.name, self.children)
+        else:
+            return '<Node {!r} {!r}>'.format(self.name, self.rules)
 
 
 class TopologyBuilder(object):

@@ -17,7 +17,7 @@ layouts:
     # may connect
     gateway_input <- _gateway_in:
       port: 10002
-    gateway_output -> _gateway_out:
+    _gateway_out <- gateway_output:
       port: 10002
     frontend <- _api:
       port: 10004
@@ -40,11 +40,10 @@ layouts:
   # Note: _ports of cluster layout are treated as nodes here
   world:
     _api -> api:
-      port: 2222
     gateway_in <- gateway_out:
       # This connects each gateway_out to each gateway_in of every other node
       # in the cluster, skipping loops in connections
-      skip_ourself: yes
+      skip_same: dc
 
 #
 # Groups are basically instances of the layouts
