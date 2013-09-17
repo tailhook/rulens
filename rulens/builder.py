@@ -2,7 +2,7 @@ import random
 from collections import defaultdict
 from itertools import groupby
 
-from .topology import Topology
+from .topology import Topology, ExternTopology
 
 
 class Connection(object):
@@ -289,38 +289,31 @@ class TopologyBuilder(object):
         self._groups = data['groups']
         self._topologies = data['topologies']
 
-    def _populate_topology(self, top, layout=None, children=None,
-                                 topology=None, slot=None):
-        assert bool(layout) != bool(topology), \
-            "Either layout or topology should be specified"
-
-        if layout:
-            assert children
-            nodes = defaultdict(list)
-            for i in children:
-                g = self._groups[i]
-                l = self._layouts[g['layout']]
-                groupnodes = self._process_group(i, g, l)
-                cinfo = {Connection.canonical_key(k): v
-                    for k, v in g.get('connections', {}).items()}
-                for conn in l._connections:
-                    conn.instantiate(groupnodes, cinfo.get(conn.key()))
-                for role, nlist in groupnodes.items():
-                    if role.startswith('_'):
-                        name = role[1:]
-                        nodes[name].append(Node.supernode(name, nlist))
-                    else:
-                        nodes[role].extend(nlist)
-            l = self._layouts[layout]
+    def _populate_for_layout(self, top, layout, children):
+        nodes = defaultdict(list)
+        for i in children:
+            g = self._groups[i]
+            l = self._layouts[g['layout']]
+            groupnodes = self._process_group(i, g, l)
+            cinfo = {Connection.canonical_key(k): v
+                for k, v in g.get('connections', {}).items()}
             for conn in l._connections:
-                conn.instantiate(nodes)
-            for role, nlist in nodes.items():
-                for node in nlist:
-                    top.add_rule(role, node)
+                conn.instantiate(groupnodes, cinfo.get(conn.key()))
+            for role, nlist in groupnodes.items():
+                if role.startswith('_'):
+                    name = role[1:]
+                    nodes[name].append(Node.supernode(name, nlist))
+                else:
+                    nodes[role].extend(nlist)
+        l = self._layouts[layout]
+        for conn in l._connections:
+            conn.instantiate(nodes)
+        for role, nlist in nodes.items():
+            for node in nlist:
+                top.add_rule(role, node)
 
-        if topology:
-            pass
-
+    def _populate_from(self, top, source, slot):
+        pass
 
 
     def _process_group(self, groupname, group, layout):
@@ -339,7 +332,20 @@ class TopologyBuilder(object):
 
 
     def topologies(self):
+        topologies = {}
+        # First made topologies having layout
         for name, properties in self._topologies.items():
+            if 'layout' not in properties:
+                continue
             top = Topology(name, properties.pop('type'))
-            self._populate_topology(top, **properties)
+            self._populate_for_layout(top, **properties)
+            topologies[name] = top
             yield name, top
+        # The process extern topologies
+        for name, properties in self._topologies.items():
+            if 'topology' not in properties:
+                continue
+            top = ExternTopology(name, properties.pop('type'))
+            self._populate_from(top,
+                topologies[properties.pop('topology')]
+                **properties)

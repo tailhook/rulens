@@ -60,7 +60,8 @@ def main():
     if options.print_db:
         db.pretty_print()
     elif options.query:
-        db.resolve(*options.query)
+        for a in db.resolve(*options.query):
+            print(a)
 
 
 

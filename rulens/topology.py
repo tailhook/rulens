@@ -40,7 +40,8 @@ class Topology(object):
         self.rules = defaultdict(list)
 
     def __repr__(self):
-        return '<Topology {!r}>'.format(self.name)
+        return '<{} {} {!r}>'.format(
+            self.__class__.__name__, self.type, self.name)
 
     def resolve_node(self, role, sock_type, props):
         party = self.party_mapping[sock_type]
@@ -55,3 +56,9 @@ class Topology(object):
 
     def add_rule(self, role, rule):
         self.rules[role].append(rule)
+
+
+class ExternTopology(Topology):
+
+    def resolve_node(self, role, sock_type, props):
+        return self.node
