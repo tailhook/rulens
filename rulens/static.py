@@ -64,7 +64,7 @@ def draw_instance_graph(options, db):
                             raise AssertionError(
                                 "Wrong address {!r}".format(addr))
     priority_styles = ['dotted', 'dashed', 'solid']
-    priority_lengths = [0, 0, 2]
+    priority_lengths = [0, 0, 1]
     priostyles = {None: 'solid'}
     priolengths = {None: 1}
     for i in sorted(priorities):
@@ -74,7 +74,8 @@ def draw_instance_graph(options, db):
     #if True:
     with set_stdout(io.TextIOWrapper(proc.stdin)):
         print("digraph topology {")
-        print("rankdir=LR")
+        print("rankdir=TB")
+        print("ranksep=2")
 
         for host, ndict in hosts.items():
             print("subgraph cluster_{} {{".format(host))
@@ -123,6 +124,9 @@ def draw_instance_graph(options, db):
                             .format(counter, addr))
                         print('{} -> ext_{} [style="{}" dir=back arrowhead=inv]'
                             .format(n, counter, priostyles[p]))
+        print('{rank=same;',
+            ' '.join('ext_' + str(i) for i in range(1, counter+1)),
+            '}')
         if conn:
             raise ValueError(conn)
 
