@@ -1,5 +1,5 @@
+import random
 from collections import defaultdict
-import pprint
 
 from .topology import Topology
 
@@ -18,37 +18,52 @@ class Connection(object):
         self.addresses = []
         assert not (port and addr), "Either port or addr may only be specified"
 
-    def instantiate(self, nodes):
+    def instantiate(self, nodes, info=None):
         src = nodes[self.source]
         tgt = nodes[self.sink]
-        ci = ConnectionInstance(self, src, tgt)
+        ci = ConnectionInstance(self, src, tgt, **(info or {}))
         for n in src:
             n.add_source_connection(ci)
         for n in tgt:
             n.add_sink_connection(ci)
 
+    def key(self):
+        if self.bound == self.source:
+            return "{} -> {}".format(self.source, self.sink)
+        else:
+            return "{} <- {}".format(self.sink, self.source)
+
+    @staticmethod
+    def canonical_key(key):
+        a, arr, b = key.split()
+        assert arr in ('<-', '->'), arr
+        return '{} {} {}'.format(a, arr, b)
+
+
 
 class ConnectionInstance(object):
 
-    def __init__(self, info, sources, sinks):
+    def __init__(self, info, sources, sinks, *,
+        match_by=None, rules=(), default='all'):
         self.sources = sources
         self.sinks = sinks
         self.info = info
+        self.match_by = match_by
+        self.rules = rules
+        self.default = default
 
-    def _addr(self, node=None):
+    def _addr(self, nodes=None):
         info = self.info
         if info.addr:
             yield info.addr
             return
-        if node is None:
+        if nodes is None:
             if info.bound == info.source:
-                nn = self.sources
+                nodes = self.sources
             else:
-                nn = self.sinks
-            for n in nn:
-                yield self._single_addr(n)
-        else:
-            yield self._single_addr(node)
+                nodes = self.sinks
+        for n in nodes:
+            yield self._single_addr(n)
 
     def _single_addr(self, node):
         ip = None
@@ -59,21 +74,57 @@ class ConnectionInstance(object):
         assert port, port
         return 'tcp://{}:{}'.format(ip, port)
 
-    def address_for(self, node):
+    def address_for(self, node, props):
         info = self.info
         if node in self.sources:
             if info.bound == info.source:
-                for a in self._addr(node):
+                for a in self._addr([node]):
                     yield 'bind:{}:{}'.format(info.priority, a)
             else:
-                for a in self._addr():
+                if self.match_by:
+                    sinks = []
+                    myval = props[self.match_by]
+                    for t in self.sinks:
+                        for r in reversed(t.rules):
+                            val = r.get(self.match_by)
+                            if val is not None:
+                                conn = '{} -> {}'.format(val, myval)
+                                if conn in self.rules:
+                                    sinks.append(t)
+                                break
+                    if not sinks:
+                        if self.default == 'all':
+                            sinks = self.sinks
+                        else:
+                            sinks = [random.choice(self.sinks)]
+                else:
+                    sinks = self.sinks
+                for a in self._addr(sinks):
                     yield 'connect:{}:{}'.format(info.priority, a)
         elif node in self.sinks:
             if info.bound == info.sink:
-                for a in self._addr(node):
+                for a in self._addr([node]):
                     yield 'bind:8:{}'.format(a)
             else:
-                for a in self._addr():
+                if self.match_by:
+                    sources = []
+                    myval = props[self.match_by]
+                    for t in self.sources:
+                        for r in reversed(t.rules):
+                            val = r.get(self.match_by)
+                            if val is not None:
+                                conn = '{} -> {}'.format(val, myval)
+                                if conn in self.rules:
+                                    sources.append(t)
+                                break
+                    if not sources:
+                        if self.default == 'all':
+                            sources = self.sources
+                        else:
+                            sources = [random.choice(self.sources)]
+                else:
+                    sources = self.sources
+                for a in self._addr(sources):
                     yield 'connect:8:{}'.format(a)
         else:
             raise RuntimeError("Wrong node")
@@ -153,7 +204,7 @@ class Node(object):
         self.connections['sink'].append(conn)
 
     def __repr__(self):
-        return '<Node {}>'.format(self.rules)
+        return '<Node {!r} {!r}>'.format(self.name, self.rules)
 
 
 class TopologyBuilder(object):
@@ -176,8 +227,10 @@ class TopologyBuilder(object):
                 g = self._groups[i]
                 l = self._layouts[g['layout']]
                 groupnodes = self._process_group(g, l)
+                cinfo = {Connection.canonical_key(k): v
+                    for k, v in g.get('connections', {}).items()}
                 for conn in l._connections:
-                    conn.instantiate(groupnodes)
+                    conn.instantiate(groupnodes, cinfo.get(conn.key()))
                 for role, nlist in groupnodes.items():
                     if role.startswith('_'):
                         name = role[1:]

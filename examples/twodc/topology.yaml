@@ -70,13 +70,13 @@ groups:
       balancer -> worker:
         match_by: ip
         rules:
-          127.1.22.1 -> 127.1.11.1
-          127.1.22.3 -> 127.1.11.1
-          127.1.22.4 -> 127.1.11.1
-          127.1.22.2 -> 127.1.11.2
-          127.1.22.4 -> 127.1.11.2
-          127.1.22.5 -> 127.1.11.2
-        # If worker ip is not in the list above, choose random balancer for it
+        - 127.1.11.1 -> 127.1.22.1
+        - 127.1.11.1 -> 127.1.22.3
+        - 127.1.11.1 -> 127.1.22.4
+        - 127.1.11.2 -> 127.1.22.2
+        - 127.1.11.2 -> 127.1.22.5
+        - 127.1.11.2 -> 127.1.22.6
+        # If worker p isi not in the list above, choose random balancer for it
         default: random
 
   cluster2:

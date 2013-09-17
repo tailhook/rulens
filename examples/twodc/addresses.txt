@@ -28,6 +28,8 @@ topology://internal?ip=127.1.22.3&dc=first&role=worker&hostname=warren&pid=2230 
 topology://internal?ip=127.1.22.4&dc=first&role=worker&hostname=wayne&pid=2240 NN_REP
 topology://internal?ip=127.1.22.5&dc=first&role=worker&hostname=wilfred&pid=2250 NN_REP
 topology://internal?ip=127.1.22.6&dc=first&role=worker&hostname=willy&pid=2260 NN_REP
+topology://internal?ip=127.1.22.7&dc=first&role=worker&hostname=woody&pid=2270 NN_REP
+topology://internal?ip=127.1.22.7&dc=first&role=worker&hostname=woody&pid=2271 NN_REP
 ##### DC 1 #####
 # Frontends
 topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=510 NN_REP

@@ -52,7 +52,7 @@ class Topology(object):
             raise AssertionError("No rule for node")
         node = rules[0]
         for conn in node.connections[party]:
-            yield from conn.address_for(node)
+            yield from conn.address_for(node, props)
 
     def add_rule(self, role, rule):
         self.rules[role].append(rule)
