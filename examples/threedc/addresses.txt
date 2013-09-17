@@ -1,23 +1,15 @@
 ##### DC 1 #####
 # Frontends
-topology://internal?ip=127.1.5.1&dc=first&role=frontend&hostname=felicia&pid=510 NN_REP
-topology://internal?ip=127.1.5.1&dc=first&role=frontend&hostname=felicia&pid=510 NN_REQ
-topology://internal?ip=127.1.5.1&dc=first&role=frontend&hostname=felicia&pid=511 NN_REP
-topology://internal?ip=127.1.5.1&dc=first&role=frontend&hostname=felicia&pid=511 NN_REQ
-topology://internal?ip=127.1.5.2&dc=first&role=frontend&hostname=florence&pid=520 NN_REP
-topology://internal?ip=127.1.5.2&dc=first&role=frontend&hostname=florence&pid=520 NN_REQ
-topology://internal?ip=127.1.5.2&dc=first&role=frontend&hostname=florence&pid=521 NN_REP
-topology://internal?ip=127.1.5.2&dc=first&role=frontend&hostname=florence&pid=521 NN_REQ
+topology://internal?ip=127.1.5.1&dc=first&role=frontend&hostname=felicia&pid=510 device
+topology://internal?ip=127.1.5.1&dc=first&role=frontend&hostname=felicia&pid=511 device
+topology://internal?ip=127.1.5.2&dc=first&role=frontend&hostname=florence&pid=520 device
+topology://internal?ip=127.1.5.2&dc=first&role=frontend&hostname=florence&pid=521 device
 # Gateway
-topology://internal?ip=127.1.6.1&dc=first&role=gateway_input&hostname=gina&pid=610 NN_REP
-topology://internal?ip=127.1.6.1&dc=first&role=gateway_input&hostname=gina&pid=610 NN_REQ
-topology://internal?ip=127.1.6.1&dc=first&role=gateway_output&hostname=gina&pid=610 NN_REP
-topology://internal?ip=127.1.6.1&dc=first&role=gateway_output&hostname=gina&pid=610 NN_REQ
+topology://internal?ip=127.1.6.1&dc=first&role=gateway_input&hostname=gina&pid=610 device
+topology://internal?ip=127.1.6.1&dc=first&role=gateway_output&hostname=gina&pid=610 device
 # Load Balancers
-topology://internal?ip=127.1.11.1&dc=first&role=balancer&hostname=laura&pid=1110 NN_REP
-topology://internal?ip=127.1.11.1&dc=first&role=balancer&hostname=laura&pid=1110 NN_REQ
-topology://internal?ip=127.1.11.2&dc=first&role=balancer&hostname=lisa&pid=1120 NN_REP
-topology://internal?ip=127.1.11.2&dc=first&role=balancer&hostname=lisa&pid=1120 NN_REQ
+topology://internal?ip=127.1.11.1&dc=first&role=balancer&hostname=laura&pid=1110 device
+topology://internal?ip=127.1.11.2&dc=first&role=balancer&hostname=lisa&pid=1120 device
 # Workers
 # TODO(pc) add device for wally
 topology://internal?ip=127.1.22.1&dc=first&role=worker&hostname=wally&pid=2210 NN_REP
@@ -32,35 +24,25 @@ topology://internal?ip=127.1.22.7&dc=first&role=worker&hostname=woody&pid=2270 N
 topology://internal?ip=127.1.22.7&dc=first&role=worker&hostname=woody&pid=2271 NN_REP
 ##### DC 2 #####
 # Frontends
-topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=510 NN_REP
-topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=510 NN_REQ
-topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=511 NN_REP
-topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=511 NN_REQ
+topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=510 device
+topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=511 device
 # Gateway
-topology://internal?ip=127.2.6.1&dc=second&role=gateway_input&hostname=gloria&pid=610 NN_REP
-topology://internal?ip=127.2.6.1&dc=second&role=gateway_input&hostname=gloria&pid=610 NN_REQ
-topology://internal?ip=127.2.6.1&dc=second&role=gateway_output&hostname=gloria&pid=610 NN_REP
-topology://internal?ip=127.2.6.1&dc=second&role=gateway_output&hostname=gloria&pid=610 NN_REQ
+topology://internal?ip=127.2.6.1&dc=second&role=gateway_input&hostname=gloria&pid=610 device
+topology://internal?ip=127.2.6.1&dc=second&role=gateway_output&hostname=gloria&pid=610 device
 # Load Balancers
-topology://internal?ip=127.2.11.1&dc=second&role=balancer&hostname=lora&pid=1110 NN_REP
-topology://internal?ip=127.2.11.1&dc=second&role=balancer&hostname=lora&pid=1110 NN_REQ
+topology://internal?ip=127.2.11.1&dc=second&role=balancer&hostname=lora&pid=1110 device
 # Workers
 topology://internal?ip=127.2.22.1&dc=second&role=worker&hostname=winnie&pid=2210 NN_REP
 topology://internal?ip=127.2.22.2&dc=second&role=worker&hostname=winston&pid=2220 NN_REP
 ##### DC 3 #####
 # Frontends
-topology://internal?ip=127.3.5.1&dc=third&role=frontend&hostname=francie&pid=510 NN_REP
-topology://internal?ip=127.3.5.1&dc=third&role=frontend&hostname=francie&pid=510 NN_REQ
-topology://internal?ip=127.3.5.1&dc=third&role=frontend&hostname=francie&pid=511 NN_REP
-topology://internal?ip=127.3.5.1&dc=third&role=frontend&hostname=francie&pid=511 NN_REQ
+topology://internal?ip=127.3.5.1&dc=third&role=frontend&hostname=francie&pid=510 device
+topology://internal?ip=127.3.5.1&dc=third&role=frontend&hostname=francie&pid=511 device
 # Gateway
-topology://internal?ip=127.3.6.1&dc=third&role=gateway_input&hostname=glenda&pid=610 NN_REP
-topology://internal?ip=127.3.6.1&dc=third&role=gateway_input&hostname=glenda&pid=610 NN_REQ
-topology://internal?ip=127.3.6.1&dc=third&role=gateway_output&hostname=glenda&pid=610 NN_REP
-topology://internal?ip=127.3.6.1&dc=third&role=gateway_output&hostname=glenda&pid=610 NN_REQ
+topology://internal?ip=127.3.6.1&dc=third&role=gateway_input&hostname=glenda&pid=610 device
+topology://internal?ip=127.3.6.1&dc=third&role=gateway_output&hostname=glenda&pid=610 device
 # Load Balancers
-topology://internal?ip=127.3.11.1&dc=third&role=balancer&hostname=linda&pid=1110 NN_REP
-topology://internal?ip=127.3.11.1&dc=third&role=balancer&hostname=linda&pid=1110 NN_REQ
+topology://internal?ip=127.3.11.1&dc=third&role=balancer&hostname=linda&pid=1110 device
 # Workers
 topology://internal?ip=127.3.22.1&dc=third&role=worker&hostname=walter&pid=2210 NN_REP
 topology://internal?ip=127.3.22.2&dc=third&role=worker&hostname=wilber&pid=2220 NN_REP

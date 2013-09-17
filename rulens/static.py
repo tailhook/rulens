@@ -28,6 +28,7 @@ def draw_instance_graph(options, db):
     proc = subprocess.Popen(['dot', '-Tpng', '-o', fn],
         stdin=subprocess.PIPE)
     hosts = defaultdict(dict)
+    devices = set()
     conn = defaultdict(list)
     bind = defaultdict(list)
     priorities = set()
@@ -38,25 +39,30 @@ def draw_instance_graph(options, db):
                 line = line.strip()
                 if line.startswith('#'):  # comment
                     continue
-                url, socktype = line.split()
-                u = urlparse(url)
-                query = dict(parse_qsl(u.query))
-                nname = '{0[hostname]}_{0[role]}_{0[pid]}'.format(query)
-                hosts[query['hostname']][nname] = query
-                for addr in db.resolve(None, None, url, socktype):
-                    kind, priority, raddr = addr.split(':', 2)
-                    if socktype == 'NN_REQ':  # TODO(pc) other types!
-                        priority = int(priority)
-                        priorities.add(priority)
-                    else:
-                        priority = None
-                    if kind == 'bind':
-                        bind[raddr].append((priority, nname))
-                    elif kind == 'connect':
-                        conn[raddr].append((priority, nname))
-                    else:
-                        raise AssertionError(
-                            "Wrong address {!r}".format(addr))
+                url, nodetype = line.split()
+                if nodetype == 'device':
+                    socktypes = ('NN_REQ', 'NN_REP')
+                for socktype in socktypes:
+                    u = urlparse(url)
+                    query = dict(parse_qsl(u.query))
+                    nname = '{0[hostname]}_{0[role]}_{0[pid]}'.format(query)
+                    if nodetype == 'device':
+                        devices.add(nname)
+                    hosts[query['hostname']][nname] = query
+                    for addr in db.resolve(None, None, url, socktype):
+                        kind, priority, raddr = addr.split(':', 2)
+                        if socktype == 'NN_REQ':  # TODO(pc) other types!
+                            priority = int(priority)
+                            priorities.add(priority)
+                        else:
+                            priority = None
+                        if kind == 'bind':
+                            bind[raddr].append((priority, nname))
+                        elif kind == 'connect':
+                            conn[raddr].append((priority, nname))
+                        else:
+                            raise AssertionError(
+                                "Wrong address {!r}".format(addr))
     priority_styles = ['dotted', 'dashed', 'solid']
     priority_lengths = [0, 0, 2]
     priostyles = {None: 'solid'}
@@ -74,7 +80,12 @@ def draw_instance_graph(options, db):
             print("subgraph cluster_{} {{".format(host))
             print('label="{}"'.format(host))
             for name, props in ndict.items():
-                print('{0} [label={1[role]}]'.format(name, props))
+                if name in devices:
+                    print('{0} [shape=record style=rounded '
+                          'label="{{<REP>REP | {1[role]} | <REQ>REQ}}"]'
+                        .format(name, props))
+                else:
+                    print('{0} [label={1[role]}]'.format(name, props))
             print("}")
 
         for addr, nlist in bind.items():
@@ -91,6 +102,10 @@ def draw_instance_graph(options, db):
                         a, b = b, a
                         arrowhead = 'normal'
                         arrowtail = 'none'
+                    if a in devices:
+                        a = a + ':REQ'
+                    if b in devices:
+                        b = b + ':REP'
 
                     print('{} -> {} [style={} minlen={} arrowhead={} arrowtail={} dir=both]'
                         .format(a, b, priostyles[prio], priolengths[prio],
