@@ -42,7 +42,7 @@ class Connection(object):
                                     (self.port, conn.info.port)
                             else:
                                 self.port = conn.info.port
-
+                        conn.delete()
             else:
                 src.add(n)
 
@@ -58,6 +58,7 @@ class Connection(object):
                                     (self.port, conn.info.port)
                             else:
                                 self.port = conn.info.port
+                        conn.delete()
             else:
                 tgt.add(n)
 
@@ -106,6 +107,12 @@ class ConnectionInstance(object):
         self.match_by = match_by
         self.rules = rules
         self.default = default
+
+    def delete(self):
+        for n in self.sources:
+            n.connections['source'].remove(self)
+        for n in self.sinks:
+            n.connections['sink'].remove(self)
 
     def __repr__(self):
         return ("<{0.__class__.__name__} {0.info.source}->{0.info.sink}>"
