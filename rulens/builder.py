@@ -322,17 +322,6 @@ class TopologyBuilder(object):
     def _populate_from(self, top, source, slot):
         for node in source.rules[slot]:
             top.add_rule(None, node)
-            """
-            if sum(map(bool, node.connections.values())) != 1:
-                raise AssertionError("Wrong slot {!r}".format(slot))
-            for kind, conn in node.connections.items():
-                if not conn:
-                    continue
-                peer = 'sink' if kind == 'source' else 'source'
-                for conn in conn:
-
-                debug(slot, peer)
-            """
 
     def _process_group(self, groupname, group, layout):
         global_rule = group['rule']
