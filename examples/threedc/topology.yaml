@@ -30,7 +30,7 @@ layouts:
 
   # The intra-node layout, may be needed on nodes having many workers, or
   # for some another reason
-  subcluser:
+  subcluster:
     _worker -> device:  # port may be omitted if can be deduced by topology
     device -> worker:
       addr: ipc:///tmp/device  # note using IPC socket for intra-node messages

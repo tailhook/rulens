@@ -5,6 +5,7 @@ import argparse
 import sys
 import io
 import subprocess
+import yaml
 from urllib.parse import urlparse, parse_qsl
 from contextlib import contextmanager
 from collections import defaultdict
@@ -142,14 +143,41 @@ def draw_instance_graph(options, db):
         print("}")
 
 
+def draw_layout_graph(options, lname, layout):
+    fn = lname + '_graph.png'
+    print("Writing", fn)
+    proc = subprocess.Popen(['dot', '-Tpng', '-o', fn],
+        stdin=subprocess.PIPE)
+    with set_stdout(io.TextIOWrapper(proc.stdin)):
+        print('digraph', lname, '{')
+        nodes = set()
+        for k in layout:
+            a, arr, b = k.split()
+            if a not in nodes:
+                nodes.add(a)
+                if a.startswith('_'):
+                    print(a, '[shape=octagon]')
+            if b not in nodes:
+                nodes.add(b)
+                if b.startswith('_'):
+                    print(b, '[shape=octagon]')
+        for k in layout:
+            a, arr, b = k.split()
+            if arr == '->':
+                print(k)
+            else:
+                print(b, '->', a, '[dir=back arrowtail=inv]')
+        print('}')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('topology_files', nargs='+',
         help="Files to read topology from")
     ap.add_argument('-l', '--list-file', default=[], action="append",
         help="The text file with list of name requests to run tests against")
-    ap.add_argument('-g', '--basic-graph', action="store_true",
-        help="Draw bare diagram from topopology file")
+    ap.add_argument('-L', '--layout-graph', metavar="LAYOUT",
+        help="Draw bare diagram for a single layout from topology file")
     ap.add_argument('-G', '--instance-graph', action="store_true",
         help="Draw diagram of nodes read from --list-file")
     ap.add_argument('-p', '--print-addresses', action="store_true",
@@ -173,11 +201,17 @@ def main():
                     for addr in db.resolve(None, None, url, socktype):
                         print('   ', addr)
 
-    if options.basic_graph:
-        pass
-
     if options.instance_graph:
         draw_instance_graph(options, db)
+
+    if options.layout_graph:
+        for i in options.topology_files:
+            with open(i, 'rt') as f:
+                data = yaml.load(f)
+            ldata = data['layouts'].get(options.layout_graph)
+            if ldata is not None:
+                draw_layout_graph(options, options.layout_graph, ldata)
+                break
 
 
 if __name__ == '__main__':
