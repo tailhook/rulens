@@ -16,7 +16,8 @@ class Database(object):
         topology = self.topologies[url.netloc]
         params = dict(parse_qsl(url.query))
         params.update(dict(host=host, appname=appname))
-        node, party = topology.resolve_node(params['role'], socktype, params)
+        node = topology.resolve_node(params.get('role', None), params)
+        party = topology.party_mapping[socktype]
         for conn in node.connections[party]:
             yield from conn.address_for(node, params)
 
@@ -26,7 +27,7 @@ class Database(object):
         topology = self.topologies[url.netloc]
         params = dict(parse_qsl(url.query))
         params.update(dict(host=host, appname=appname))
-        node, party = topology.resolve_node(params['role'], socktype, params)
+        node = topology.resolve_node(params['role'], params)
         return node.group
 
     def pretty_print(self):

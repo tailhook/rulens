@@ -43,8 +43,7 @@ class Topology(object):
         return '<{} {} {!r}>'.format(
             self.__class__.__name__, self.type, self.name)
 
-    def resolve_node(self, role, sock_type, props):
-        party = self.party_mapping[sock_type]
+    def resolve_node(self, role, props):
         rules = list(filter(partial(match_rule, props),
             self.rules[role]))
         if len(rules) > 1:
@@ -52,7 +51,7 @@ class Topology(object):
         if len(rules) < 1:
             raise AssertionError("No rule for node")
         node = rules[0]
-        return node, party
+        return node
 
     def add_rule(self, role, rule):
         self.rules[role].append(rule)
@@ -60,5 +59,6 @@ class Topology(object):
 
 class ExternTopology(Topology):
 
-    def resolve_node(self, role, sock_type, props):
-        return self.node
+    def resolve_node(self, role, props):
+        return super().resolve_node(None, props)
+

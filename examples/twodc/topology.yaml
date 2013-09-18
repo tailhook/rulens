@@ -39,7 +39,7 @@ layouts:
   # instances of"cluster" layout with each other
   # Note: _ports of cluster layout are treated as nodes here
   world:
-    _api -> api:
+    api <- _public:
     gateway_in <- gateway_out:
       # This connects each gateway_out to each gateway_in of every other node
       # in the cluster, skipping loops in connections
@@ -119,5 +119,5 @@ topologies:
   public:
     type: reqrep
     topology: internal
-    slot: _api
+    slot: _public
 

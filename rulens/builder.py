@@ -19,6 +19,9 @@ class Connection(object):
         self.addresses = []
         assert not (port and addr), "Either port or addr may only be specified"
 
+    def __repr__(self):
+        return '<{} {}>'.format(self.__class__.__name__, self.key())
+
     @property
     def abstract(self):
         return self.source.startswith('_') or self.sink.startswith('_')
@@ -138,7 +141,7 @@ class ConnectionInstance(object):
                 for a in self._addr([node]):
                     yield 'bind:{}:{}'.format(info.priority, a)
             else:
-                if info.abstract:  # can't connect to abstract connection
+                if info.sink.startswith('_'):
                     return
                 if self.match_by:
                     sinks = []
@@ -164,7 +167,7 @@ class ConnectionInstance(object):
                 for a in self._addr([node]):
                     yield 'bind:8:{}'.format(a)
             else:
-                if info.abstract:  # can't connect to abstract connection
+                if info.source.startswith('_'):
                     return
                 if self.match_by:
                     sources = []
@@ -306,6 +309,10 @@ class TopologyBuilder(object):
                 else:
                     nodes[role].extend(nlist)
         l = self._layouts[layout]
+        for ep in l._roles:
+            if not ep in nodes:
+                node = Node(ep)
+                nodes[node.name].append(node)
         for conn in l._connections:
             conn.instantiate(nodes)
         for role, nlist in nodes.items():
@@ -313,8 +320,19 @@ class TopologyBuilder(object):
                 top.add_rule(role, node)
 
     def _populate_from(self, top, source, slot):
-        pass
+        for node in source.rules[slot]:
+            top.add_rule(None, node)
+            """
+            if sum(map(bool, node.connections.values())) != 1:
+                raise AssertionError("Wrong slot {!r}".format(slot))
+            for kind, conn in node.connections.items():
+                if not conn:
+                    continue
+                peer = 'sink' if kind == 'source' else 'source'
+                for conn in conn:
 
+                debug(slot, peer)
+            """
 
     def _process_group(self, groupname, group, layout):
         global_rule = group['rule']
@@ -347,5 +365,6 @@ class TopologyBuilder(object):
                 continue
             top = ExternTopology(name, properties.pop('type'))
             self._populate_from(top,
-                topologies[properties.pop('topology')]
+                topologies[properties.pop('topology')],
                 **properties)
+            yield name, top
