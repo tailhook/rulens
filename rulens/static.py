@@ -25,10 +25,6 @@ def set_stdout(file):
         sys.stdout = oldstdout
 
 def draw_instance_graph(options, db):
-    fn = 'instance_graph.png'
-    print("Writing", fn)
-    proc = subprocess.Popen(['dot', '-Tpng', '-o', fn],
-        stdin=subprocess.PIPE)
     hosts = defaultdict(partial(defaultdict, dict))
     devices = set()
     conn = defaultdict(list)
@@ -74,8 +70,15 @@ def draw_instance_graph(options, db):
         priostyles[i] = priority_styles.pop()
         priolengths[i] = priority_lengths.pop()
 
-    #if True:
-    with set_stdout(io.TextIOWrapper(proc.stdin)):
+    if options.raw:
+        stream = sys.stdout
+    else:
+        fn = 'instance_graph.png'
+        print("Writing", fn)
+        proc = subprocess.Popen(['dot', '-Tpng', '-o', fn],
+            stdin=subprocess.PIPE)
+        stream = io.TextIOWrapper(proc.stdin)
+    with set_stdout(stream):
         print("digraph topology {")
         print("rankdir=LR")
         print("ranksep=2")
@@ -145,10 +148,14 @@ def draw_instance_graph(options, db):
 
 def draw_layout_graph(options, lname, layout):
     fn = lname + '_graph.png'
-    print("Writing", fn)
-    proc = subprocess.Popen(['dot', '-Tpng', '-o', fn],
-        stdin=subprocess.PIPE)
-    with set_stdout(io.TextIOWrapper(proc.stdin)):
+    if options.raw:
+        stream = sys.stdout
+    else:
+        print("Writing", fn)
+        proc = subprocess.Popen(['dot', '-Tpng', '-o', fn],
+            stdin=subprocess.PIPE)
+        stream = io.TextIOWrapper(proc.stdin)
+    with set_stdout(stream):
         print('digraph', lname, '{')
         nodes = set()
         for k in layout:
@@ -182,6 +189,8 @@ def main():
         help="Draw diagram of nodes read from --list-file")
     ap.add_argument('-p', '--print-addresses', action="store_true",
         help="Print addresses resolved for each --list-file")
+    ap.add_argument('--raw', action="store_true",
+        help="Print graph data instead of drawing graph")
     options = ap.parse_args()
 
 
@@ -196,10 +205,15 @@ def main():
                     line = line.strip()
                     if line.startswith('#'):  # comment
                         continue
-                    url, socktype = line.split()
-                    print(url, socktype)
-                    for addr in db.resolve(None, None, url, socktype):
-                        print('   ', addr)
+                    url, nodetype = line.split()
+                    if nodetype == 'device':
+                        socktypes = ('NN_REQ', 'NN_REP')
+                    else:
+                        socktypes = (nodetype,)
+                    for socktype in socktypes:
+                        print(url, socktype)
+                        for addr in db.resolve(None, None, url, socktype):
+                            print('   ', addr)
 
     if options.instance_graph:
         draw_instance_graph(options, db)

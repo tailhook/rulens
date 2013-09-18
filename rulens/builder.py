@@ -254,11 +254,15 @@ class Node(object):
             'source': [],
             'sink': [],
             }
+        self.parent = None
 
     @classmethod
     def supernode(Node, name, nodes):
         self = Node(name, [])
         self.children = nodes
+        for n in nodes:
+            assert n.parent is None, n
+            n.parent = self
         return self
 
     @property
@@ -292,12 +296,30 @@ class TopologyBuilder(object):
         self._groups = data['groups']
         self._topologies = data['topologies']
 
+    def _add_matching_groups(self, top, nodes):
+        for groupname, g in self._groups.items():
+            if g.get('match_topology') != top.name:
+                continue
+            l = self._layouts[g['layout']]
+            groupnodes = self._process_group(groupname, g, l)
+            for conn in l._connections:
+                conn.instantiate(groupnodes)
+            for role, nlist in groupnodes.items():
+                if role.startswith('_'):
+                    name = role[1:]
+                    nodes[name].append(Node.supernode(name, nlist))
+                else:
+                    for node in nlist:
+                        top.add_rule(role, node)
+
     def _populate_for_layout(self, top, layout, children):
         nodes = defaultdict(list)
+
         for i in children:
             g = self._groups[i]
             l = self._layouts[g['layout']]
             groupnodes = self._process_group(i, g, l)
+            self._add_matching_groups(top, groupnodes)
             cinfo = {Connection.canonical_key(k): v
                 for k, v in g.get('connections', {}).items()}
             for conn in l._connections:
@@ -308,6 +330,7 @@ class TopologyBuilder(object):
                     nodes[name].append(Node.supernode(name, nlist))
                 else:
                     nodes[role].extend(nlist)
+
         l = self._layouts[layout]
         for ep in l._roles:
             if not ep in nodes:
@@ -326,7 +349,7 @@ class TopologyBuilder(object):
     def _process_group(self, groupname, group, layout):
         global_rule = group['rule']
         by_role = defaultdict(list)
-        for role, rules in group['children'].items():
+        for role, rules in group.get('children', {}).items():
             for rule in rules:
                 node = Node(role, [global_rule, rule], group=groupname)
                 by_role[node.name].append(node)

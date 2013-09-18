@@ -1,5 +1,4 @@
 from collections import defaultdict
-from functools import partial
 
 PARTIES = {
     'reqrep': {
@@ -27,8 +26,14 @@ def match_rule(props, node):
         for k, v in rule.items():
             if v != props.get(k):
                 return False
-    else:
-        return True
+    if hasattr(node, 'children'):
+        for n in node.children:
+            for rule in n.rules:
+                for k, v in rule.items():
+                    if v != props.get(k):
+                        return False
+    return True
+
 
 
 class Topology(object):
@@ -44,13 +49,11 @@ class Topology(object):
             self.__class__.__name__, self.type, self.name)
 
     def resolve_node(self, role, props):
-        rules = list(filter(partial(match_rule, props),
-            self.rules[role]))
-        if len(rules) > 1:
-            raise AssertionError("Ambiguous node")
-        if len(rules) < 1:
+        for node in self.rules[role]:
+            if match_rule(props, node):
+                break
+        else:
             raise AssertionError("No rule for node")
-        node = rules[0]
         return node
 
     def add_rule(self, role, rule):

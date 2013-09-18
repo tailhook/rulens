@@ -28,6 +28,8 @@ class Database(object):
         params = dict(parse_qsl(url.query))
         params.update(dict(host=host, appname=appname))
         node = topology.resolve_node(params['role'], params)
+        while node.parent:
+            node = node.parent
         return node.group
 
     def pretty_print(self):
