@@ -109,7 +109,7 @@ class ConnectionInstance(object):
 
     def __init__(self, info, sources, sinks, *,
         match_by=None, rules=(), default='all'):
-        assert info.abstract or sources and sinks, info
+        #assert info.abstract or sources and sinks, info
         self.sources = sources
         self.sinks = sinks
         self.info = info
