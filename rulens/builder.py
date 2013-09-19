@@ -8,11 +8,14 @@ from .topology import Topology, ExternTopology
 class Connection(object):
 
     def __init__(self, source, sink, bound, *,
-        port=None, priority=8, addr=None, skip_same=None):
+        port=None, priority=8, addr=None, skip_same=None,
+        ports=None, match_by=None):
         self.source = source
         self.sink = sink
         self.bound = bound
         self.port = port
+        self.ports = ports
+        self.match_by = match_by
         self.addr = addr
         self.priority = priority
         self.skip_same = skip_same
@@ -42,6 +45,9 @@ class Connection(object):
                                     (self.port, conn.info.port)
                             else:
                                 self.port = conn.info.port
+                        if conn.info.ports is not None:  # kinda dirty
+                            self.ports = conn.info.ports
+                            self.match_by = conn.info.match_by
                         conn.delete()
             else:
                 src.add(n)
@@ -58,6 +64,9 @@ class Connection(object):
                                     (self.port, conn.info.port)
                             else:
                                 self.port = conn.info.port
+                        if conn.info.ports is not None:  # kinda dirty
+                            self.ports = conn.info.ports
+                            self.match_by = conn.info.match_by
                         conn.delete()
             else:
                 tgt.add(n)
@@ -118,7 +127,7 @@ class ConnectionInstance(object):
         return ("<{0.__class__.__name__} {0.info.source}->{0.info.sink}>"
             .format(self))
 
-    def _addr(self, nodes=None):
+    def _addr(self, nodes, props=None):
         info = self.info
         if info.addr:
             yield info.addr
@@ -129,23 +138,29 @@ class ConnectionInstance(object):
             else:
                 nodes = self.sinks
         for n in nodes:
-            yield self._single_addr(n)
+            if info.ports and props is None:
+                for key in self.info.ports:
+                    yield self._single_addr(n, {info.match_by: key})
+            else:
+                yield self._single_addr(n, props)
 
-    def _single_addr(self, node):
+    def _single_addr(self, node, props):
         ip = None
         for r in node.rules:
             if 'ip' in r:
                 ip = r['ip']
         port = self.info.port
         assert ip, node
-        assert port, node
+        if not port:
+            assert self.info.ports and self.info.match_by, node
+            port = self.info.ports[props[self.info.match_by]]
         return 'tcp://{}:{}'.format(ip, port)
 
     def address_for(self, node, props):
         info = self.info
         if node in self.sources:
             if info.bound == info.source:
-                for a in self._addr([node]):
+                for a in self._addr([node], props):
                     yield 'bind:{}:{}'.format(info.priority, a)
             else:
                 if info.sink.startswith('_'):
@@ -171,7 +186,7 @@ class ConnectionInstance(object):
                     yield 'connect:{}:{}'.format(info.priority, a)
         elif node in self.sinks:
             if info.bound == info.sink:
-                for a in self._addr([node]):
+                for a in self._addr([node], props):
                     yield 'bind:8:{}'.format(a)
             else:
                 if info.source.startswith('_'):

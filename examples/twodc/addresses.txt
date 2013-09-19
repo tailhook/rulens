@@ -1,9 +1,9 @@
 ##### DC 1 #####
 # Frontends
-topology://internal?ip=127.1.5.1&dc=first&role=frontend&hostname=felicia&pid=510 device
-topology://internal?ip=127.1.5.1&dc=first&role=frontend&hostname=felicia&pid=511 device
-topology://internal?ip=127.1.5.2&dc=first&role=frontend&hostname=florence&pid=520 device
-topology://internal?ip=127.1.5.2&dc=first&role=frontend&hostname=florence&pid=521 device
+topology://internal?ip=127.1.5.1&dc=first&role=frontend&hostname=felicia&pid=510&id=1 device
+topology://internal?ip=127.1.5.1&dc=first&role=frontend&hostname=felicia&pid=511&id=2 device
+topology://internal?ip=127.1.5.2&dc=first&role=frontend&hostname=florence&pid=520&id=1 device
+topology://internal?ip=127.1.5.2&dc=first&role=frontend&hostname=florence&pid=521&id=2 device
 # Gateway
 topology://internal?ip=127.1.6.1&dc=first&role=gateway_input&hostname=gina&pid=610 device
 topology://internal?ip=127.1.6.1&dc=first&role=gateway_output&hostname=gina&pid=610 device
@@ -25,8 +25,8 @@ topology://internal?ip=127.1.22.7&dc=first&role=worker&hostname=woody&pid=2270 N
 topology://internal?ip=127.1.22.7&dc=first&role=worker&hostname=woody&pid=2271 NN_REP
 ##### DC 2 #####
 # Frontends
-topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=510 device
-topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=511 device
+topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=510&id=1 device
+topology://internal?ip=127.2.5.1&dc=second&role=frontend&hostname=faith&pid=511&id=2 device
 # Gateway
 topology://internal?ip=127.2.6.1&dc=second&role=gateway_input&hostname=gloria&pid=610 device
 topology://internal?ip=127.2.6.1&dc=second&role=gateway_output&hostname=gloria&pid=610 device

@@ -20,7 +20,10 @@ layouts:
     _gateway_out <- gateway_output:
       port: 10002
     frontend <- _api:
-      port: 10004
+      match_by: id
+      ports:  # two processes will be at max, all variables are strings
+        "1": 10100
+        "2": 10101
     gateway_input -> balancer:
       port: 10007
     balancer -> gateway_output:
