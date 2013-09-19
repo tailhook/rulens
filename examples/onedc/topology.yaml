@@ -1,0 +1,114 @@
+#
+# Layouts are basically reusable sub-topologies
+# We use them as a building blocks for bigger topologies
+#
+layouts:
+  # The layout for single datacenter
+  cluster:
+    # The connection between *roles* not nodes is being defined
+    # First node has to nn_bind() socket, second one nn_connect()s
+    # The arrow "->" or "<-" goes in direction from REQ to REP socket
+    balancer -> worker:
+      port: 10001
+    balancer <- frontend:
+      port: 10006
+
+    # The _underscored names denote "port" a place where external entity
+    # may connect
+    gateway_input <- _gateway_in:
+      port: 10002
+    _gateway_out <- gateway_output:
+      port: 10002
+    frontend <- _api:
+      match_by: id
+      ports:  # two processes will be at max, all variables are strings
+        "1": 10100
+        "2": 10101
+    gateway_input -> balancer:
+      port: 10007
+    balancer -> gateway_output:
+      # Failover route, note default priority is 8
+      port: 10005
+      priority: 10
+
+  # The intra-node layout, may be needed on nodes having many workers, or
+  # for some another reason
+  subcluster:
+    _worker -> device:  # port may be omitted if can be deduced by topology
+    device -> worker:
+      addr: ipc:///tmp/device  # note using IPC socket for intra-node messages
+
+  # The cross-data-center layout, basically it connects ports from multiple
+  # instances of"cluster" layout with each other
+  # Note: _ports of cluster layout are treated as nodes here
+  world:
+    api <- _public:
+    gateway_in <- gateway_out:
+      # This connects each gateway_out to each gateway_in of every other node
+      # in the cluster, skipping loops in connections
+      skip_same: dc
+
+#
+# Groups are basically instances of the layouts
+# Nodes are classified by rules, rule system may be improved in the future
+#
+groups:
+  cluster1:
+    layout: cluster
+    rule:
+      dc: first
+    children:
+      frontend:
+      - ip: 127.1.5.1
+      - ip: 127.1.5.2
+      balancer:
+      - ip: 127.1.11.1
+      - ip: 127.1.11.2
+      gateway_input:
+      - ip: 127.1.6.1
+      gateway_output:
+      - ip: 127.1.6.1
+    connections:
+      balancer -> worker:
+        match_by: ip
+        rules:
+        - 127.1.11.1 -> 127.1.22.1
+        - 127.1.11.1 -> 127.1.22.3
+        - 127.1.11.1 -> 127.1.22.4
+        - 127.1.11.2 -> 127.1.22.2
+        - 127.1.11.2 -> 127.1.22.5
+        - 127.1.11.2 -> 127.1.22.6
+        # If worker p isi not in the list above, choose random balancer for it
+        default: random
+
+  subcluster1:
+    # matches all nodes in the topology
+    match_topology: internal
+    # and applies the layout then procceeds to the higher level layout
+    layout: subcluster
+    rule:
+      ip: 127.1.22.1
+
+
+#
+#  The code to tie everything together
+#
+topologies:
+  #  The whole topology is mostly a combination of multiple "cluster" layouts
+  #  Multiple "clusters" are connected using the "world" layout
+  #  Note: there are implicit "subcluster" layouts that are matched by rules
+  internal:
+    type: reqrep
+    layout: world
+    children:
+    - cluster1
+
+  #  This is a pseudo topology that "extracts" the ports from the other
+  #  topology. So that when client requests "public" topology, it always gets
+  #  public ports, no matter what the internal structure is, and what other
+  #  properties supplied in the name service are
+  public:
+    type: reqrep
+    topology: internal
+    slot: _public
+
